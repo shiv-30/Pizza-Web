@@ -1,4 +1,4 @@
-
+//jshint esversion:6
 const express = require("express");
 
 const app = express();
@@ -15,6 +15,7 @@ app.get("/", (req, res) => {
 });
 
 app.use(expressLayout);
+app.use(express.static('public'));
 app.set("views", path.join(__dirname + "/resources/views"));
 app.set("view engine", "ejs");
 
