@@ -14,6 +14,7 @@ const session = require("express-session");
 const flash = require("express-flash");
 const MongoDbStore = require("connect-mongo")(session);
 const passport = require("passport");
+const Emitter = require("events");
 //Database Connection
 const url = "mongodb://localhost/pizzaDB";
 mongoose.connect(url, { useNewUrlParser: true, useCreateIndex: true , useUnifiedTopology: true, useFindAndModify: true})
@@ -31,6 +32,10 @@ let mongoStore = new MongoDbStore({
                     mongooseConnection: connection,
                     collection: 'sessions'
                 });
+
+// Event Emitter
+const eventEmitter = new Emitter();
+app.set('eventEmitter', eventEmitter);
 
 // Session Config
 app.use(session({
@@ -71,6 +76,27 @@ app.set("view engine", "ejs");
 
 require("./routes/web")(app);
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`listening on port ${PORT}`);
 });
+
+
+// Socket
+
+const io = require("socket.io")(server);
+io.on('connection', (socket) => {
+    // Join 
+    console.log(socket.id);
+    socket.on('join', (orderId) => {
+        socket.join(orderId);
+        console.log(orderId);
+    })
+})
+
+eventEmitter.on('orderUpdated', (data) => {
+    io.to(`order_${data.id}`).emit('orderUpdated', data);
+})
+
+eventEmitter.on('orderPlaced', (data)=>{
+    io.to('adminRoom').emit('orderPlaced', data);
+})
